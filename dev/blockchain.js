@@ -31,4 +31,19 @@ Blockchain.prototype.getLastBlock = () => {
   return this.chain[this.chain.length - 1];
 };
 
+Blockchain.prototype.createNewTransaction = (amount, sender, receiver) => {
+  //create a new transaction
+  const newTransaction = {
+    amount: amount,
+    sender: sender,
+    receiver: receiver,
+  };
+
+  //push the transaction to mempool area
+  this.mempool.push(newTransaction);
+
+  //returns to which block index this pending transaction will be added to
+  return this.getLastBlock["index"] + 1;
+};
+
 module.exports = Blockchain;
