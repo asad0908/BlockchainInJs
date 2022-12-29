@@ -52,7 +52,7 @@ Blockchain.prototype.createNewTransaction = function (
   this.mempool.push(newTransaction);
 
   //returns to which block index this pending transaction will be added to
-  return this.getLastBlock["index"] + 1;
+  return this.getLastBlock().index + 1;
 };
 
 Blockchain.prototype.hashBlock = function (
