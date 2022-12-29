@@ -1,6 +1,7 @@
 const express = require("express");
 const Blockchain = require("./blockchain");
 const parser = require("body-parser");
+const port = process.argv[2];
 
 const CryptCoin = new Blockchain();
 
@@ -47,6 +48,6 @@ app.get("/mine", (req, res) => {
   res.send(blockedMined);
 });
 
-app.listen(5000, () => {
-  console.log("app is running on port 5000");
+app.listen(port, () => {
+  console.log(`app is running on port ${port}`);
 });
