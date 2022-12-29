@@ -1,10 +1,12 @@
 // MY OWN BLOCKCHAIN!
-
+const currentNodeUrl = process.argv[3];
 const sha256 = require("sha256");
 
 function Blockchain() {
   this.chain = []; //stores all the blocks (chain of blocks)
   this.mempool = []; //stores all unverified transactions
+  this.currentNodeUrl = currentNodeUrl; //assigns current node url
+  this.networkNodes = []; //stores all nodes associated with our blockchain
 
   //genesis block
   this.createNewBlock(786, "0x000000", "0x000000");

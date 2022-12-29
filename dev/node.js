@@ -48,6 +48,17 @@ app.get("/mine", (req, res) => {
   res.send(blockedMined);
 });
 
+//register and broadcast the node to the entire network
+app.post("/register-and-broadcast-node", (req, res) => {
+  const newNodeUrl = req.body.newNodeUrl;
+});
+
+//register a node within the network
+app.post("/register-node", (req, res) => {});
+
+//register multiple nodes at once
+app.post("/register-nodes-bulk", (req, res) => {});
+
 app.listen(port, () => {
   console.log(`app is running on port ${port}`);
 });
