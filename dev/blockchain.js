@@ -50,10 +50,15 @@ Blockchain.prototype.createNewTransaction = function (
     receiver: receiver,
   };
 
-  //push the transaction to mempool area
-  this.mempool.push(newTransaction);
+  //return the transaction obj
+  return newTransaction;
+};
 
-  //returns to which block index this pending transaction will be added to
+Blockchain.prototype.addTransactionToPending = function (transactionObj) {
+  //add transaction to mempool as pending transaction
+  this.mempool.push(transactionObj);
+
+  //return the block in which ttthis transaction will be included.
   return this.getLastBlock().index + 1;
 };
 

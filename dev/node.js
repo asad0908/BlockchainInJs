@@ -52,54 +52,74 @@ app.get("/mine", (req, res) => {
 //register and broadcast the node to the entire network
 app.post("/register-and-broadcast-node", (req, res) => {
   const newNodeUrl = req.body.newNodeUrl;
-  if (CryptCoin.networkNodes.indexOf(newNodeUrl) == -1)
+  const doesntExist = CryptCoin.networkNodes.indexOf(newNodeUrl) == -1;
+  const notSelf = CryptCoin.currentNodeUrl !== newNodeUrl;
+  if (doesntExist && notSelf && newNodeUrl) {
     CryptCoin.networkNodes.push(newNodeUrl);
 
-  const regNodesPromises = [];
-  CryptCoin.networkNodes.forEach((networkNode) => {
-    const requestOptions = {
-      uri: networkNode + "/register-node",
-      method: "POST",
-      body: { newNodeUrl: newNodeUrl },
-      json: true,
-    };
-    regNodesPromises.push(rp(requestOptions));
-  });
-
-  Promise.all(regNodesPromises)
-    .then((data) => {
-      const bulkRegisterOptions = {
-        uri: newNodeUrl + "/register-nodes-bulk",
-        method: "POST",
+    const regNodesPromises = [];
+    CryptCoin.networkNodes.forEach((networkUrl) => {
+      const reqOptions = {
+        uri: networkUrl + "/register-node",
+        method: "post",
         body: {
-          allNetworkNodes: [
-            ...CryptCoin.networkNodes,
-            CryptCoin.currentNodeUrl,
-          ],
+          newNodeUrl: newNodeUrl,
         },
         json: true,
       };
-      return rp(bulkRegisterOptions);
-    })
-    .then((data) => {
-      res.json({ note: "New Node registered with network successfully!" });
+      regNodesPromises.push(rp(reqOptions));
     });
+
+    Promise.all(regNodesPromises)
+      .then((data) => {
+        const bulkRegisterOptions = {
+          uri: newNodeUrl + "/register-bulk-nodes",
+          method: "post",
+          body: {
+            allNetworkNodes: [
+              ...CryptCoin.networkNodes,
+              CryptCoin.currentNodeUrl,
+            ],
+          },
+          json: true,
+        };
+        return rp(bulkRegisterOptions);
+      })
+      .then((data) => {
+        res.send({
+          note: "New Node registered successfully with the network!",
+        });
+      });
+  }
 });
 
 //register a node within the network
 app.post("/register-node", (req, res) => {
   const newNodeUrl = req.body.newNodeUrl;
-  const nodeAlreadyNotPresent =
-    CryptCoin.networkNodes.indexOf(newNodeUrl) == -1;
-  const notCurrentNode = CryptCoin.currentNodeUrl !== newNodeUrl;
-  if (nodeAlreadyNotPresent && notCurrentNode)
+  const nodeDoesNotExist = CryptCoin.networkNodes.indexOf(newNodeUrl) == -1;
+  const notACurrentNode = CryptCoin.currentNodeUrl !== newNodeUrl;
+  if (nodeDoesNotExist && notACurrentNode && newNodeUrl) {
     CryptCoin.networkNodes.push(newNodeUrl);
-
-  res.json({ note: "New node registered successfully with this node!" });
+  }
+  res.send({
+    note: `New node ${newNodeUrl} registered successfully!`,
+  });
 });
 
 //register multiple nodes at once
-app.post("/register-nodes-bulk", (req, res) => {});
+app.post("/register-bulk-nodes", (req, res) => {
+  const bulkNodesToRegister = req.body.allNetworkNodes;
+  bulkNodesToRegister.forEach((networkNodeurl) => {
+    const nodeNotPresent = CryptCoin.networkNodes.indexOf(networkNodeurl) == -1;
+    const notACurrentNode = CryptCoin.currentNodeUrl !== networkNodeurl;
+    if (nodeNotPresent && notACurrentNode) {
+      CryptCoin.networkNodes.push(networkNodeurl);
+    }
+  });
+  res.send({
+    note: "Bulk registration successful!",
+  });
+});
 
 app.listen(port, () => {
   console.log(`app is running on port ${port}`);
