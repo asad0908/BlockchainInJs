@@ -18,14 +18,10 @@ app.get("/blockchain", (req, res) => {
 
 //post a new transaction to the mempool
 app.post("/transaction", (req, res) => {
-  const { amount, sender, receiver } = req.body;
-  const blockOfTransaction = CryptCoin.createNewTransaction(
-    amount,
-    sender,
-    receiver
-  );
+  const transactionObj = req.body;
+  const blockIndex = CryptCoin.addTransactionToPending(transactionObj);
   res.send({
-    msg: `Your transaction of ${amount} cryptcoins are in pending state and will be included in next block of number ${blockOfTransaction}`,
+    msg: `Your transaction of ${transactionObj.amount} cryptcoins are in pending state and will be included in next block of number ${blockIndex}`,
   });
 });
 
@@ -46,7 +42,33 @@ app.get("/mine", (req, res) => {
     CryptCoin.getLastBlock().hash,
     hashOfThisBlock
   );
-  res.send(blockedMined);
+  const regPromises = [];
+  CryptCoin.networkNodes.forEach((networkUrl) => {
+    const regOptions = {
+      uri: networkUrl + "/broadcast-block",
+      method: "post",
+      body: {
+        newBlock: blockedMined,
+      },
+      json: true,
+    };
+    regPromises.push(rp(regOptions));
+  });
+
+  Promise.all(regPromises).then((data) => {
+    res.send({ note: "New blocked mined and broadcasted!" });
+  });
+});
+
+app.post("/broadcast-block", (req, res) => {
+  const newBlock = req.body.newBlock;
+  const hashValid = newBlock.previousHash === CryptCoin.getLastBlock().hash;
+  const indexValid = newBlock.index === CryptCoin.getLastBlock().index + 1;
+  if (hashValid && indexValid) {
+    CryptCoin.chain.push(newBlock);
+    res.send({ note: "New block added successfully!" });
+    CryptCoin.mempool = [];
+  }
 });
 
 //register and broadcast the node to the entire network
@@ -118,6 +140,31 @@ app.post("/register-bulk-nodes", (req, res) => {
   });
   res.send({
     note: "Bulk registration successful!",
+  });
+});
+
+app.post("/transaction/broadcast", (req, res) => {
+  //every transaction will fire this request and the transaction will be broadcasted to all other nodes.
+  const { amount, sender, receiver } = req.body;
+  const transactionObj = CryptCoin.createNewTransaction(
+    amount,
+    sender,
+    receiver
+  );
+  CryptCoin.mempool.push(transactionObj);
+  const regPromises = [];
+  CryptCoin.networkNodes.forEach((networkUrl) => {
+    const reqObj = {
+      uri: networkUrl + "/transaction",
+      method: "post",
+      body: transactionObj,
+      json: true,
+    };
+    regPromises.push(rp(reqObj));
+  });
+
+  Promise.all(regPromises).then((data) => {
+    res.json({ note: "Transaction is confired!" });
   });
 });
 

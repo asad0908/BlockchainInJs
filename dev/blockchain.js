@@ -48,6 +48,7 @@ Blockchain.prototype.createNewTransaction = function (
     amount: amount,
     sender: sender,
     receiver: receiver,
+    transactionId: "0x" + sha256(amount.toString() + sender + receiver),
   };
 
   //return the transaction obj
