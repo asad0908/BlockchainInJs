@@ -108,8 +108,15 @@ app.post("/register-and-broadcast-node", (req, res) => {
         return rp(bulkRegisterOptions);
       })
       .then((data) => {
-        res.send({
-          note: "New Node registered successfully with the network!",
+        const consensusOptions = {
+          uri: newNodeUrl + "/consensus",
+          method: "GET",
+          json: true,
+        };
+        rp(consensusOptions).then((data) => {
+          res.send({
+            note: "New Node registered successfully with the network!",
+          });
         });
       });
   }
@@ -199,6 +206,7 @@ app.get("/consensus", (req, res) => {
       });
     } else if (newLongestchain && CryptCoin.chainIsValid(newLongestchain)) {
       CryptCoin.chain = newLongestchain.chain;
+      CryptCoin.mempool = newLongestchain.mempool;
       res.json({
         note: "Blockchain has been replaced",
         chain: CryptCoin,
