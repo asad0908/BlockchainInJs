@@ -4,7 +4,7 @@ const parser = require("body-parser");
 const port = process.argv[2];
 const rp = require("request-promise");
 
-const CryptCoin = new Blockchain();
+let CryptCoin = new Blockchain();
 
 const app = express();
 
@@ -165,6 +165,45 @@ app.post("/transaction/broadcast", (req, res) => {
 
   Promise.all(regPromises).then((data) => {
     res.json({ note: "Transaction is confired!" });
+  });
+});
+
+app.get("/consensus", (req, res) => {
+  const requestPromises = [];
+  CryptCoin.networkNodes.forEach((networkUrl) => {
+    const requestOptions = {
+      uri: networkUrl + "/blockchain",
+      method: "GET",
+      json: true,
+    };
+    requestPromises.push(rp(requestOptions));
+  });
+
+  Promise.all(requestPromises).then((blockchains) => {
+    const currentChainLength = CryptCoin.chain.length;
+    let newLongestchain = null;
+    let newPendingTransactions = null;
+    blockchains.forEach((blockchain) => {
+      if (currentChainLength < blockchain.chain.length) {
+        newLongestchain = blockchain;
+        newPendingTransactions = blockchain.chain.transactions;
+      }
+    });
+    if (
+      !newLongestchain ||
+      (newLongestchain && !CryptCoin.chainIsValid(newLongestchain))
+    ) {
+      res.json({
+        note: "Blockchain has not been replaced",
+        chain: newLongestchain,
+      });
+    } else if (newLongestchain && CryptCoin.chainIsValid(newLongestchain)) {
+      CryptCoin.chain = newLongestchain.chain;
+      res.json({
+        note: "Blockchain has been replaced",
+        chain: CryptCoin,
+      });
+    }
   });
 });
 
